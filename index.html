@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: url('assets/mainbackground.png') no-repeat center center fixed;
+      background-size: cover;
+      z-index: 999;
+    }
+
+    .play-button {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80px;
+      height: 80px;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      z-index: 1000;
+    }
+
+    .play-button::before {
+      content: '';
+      width: 0;
+      height: 0;
+      border-style: solid;
+      border-width: 20px 0 20px 40px;
+      border-color: transparent transparent transparent rgba(255, 255, 255, 0.7);
+      transform: translateX(5px);
+      position: absolute;
+    }
+
+    #ar-scene {
+      width: 100%;
+      height: 100%;
+      position: fixed;
+      top: 0;
+      left: 0;
+    }
+  </style>
+  <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.js"></script>
+</head>
+<body>
+  <div id="loading-screen"></div>
+  <div id="ar-scene">
+    <a-scene
+      mindar-image="imageTargetSrc: ./targets.mind; filterMinCF:0.0001; filterBeta:0.001"
+      embedded
+      vr-mode-ui="enabled: false"
+      device-orientation-permission-ui="enabled: false"
+    >
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+      <a-assets>
+        <video
+          id="vid1"
+          src="assets/asset.mp4"
+          preload="auto"
+          loop
+          crossorigin="anonymous"
+          playsinline
+          webkit-playsinline
+        ></video>
+        <video
+          id="vid2"
+          src="assets/asset2.mp4"
+          preload="auto"
+          loop
+          crossorigin="anonymous"
+          playsinline
+          webkit-playsinline
+        ></video>
+      </a-assets>
+
+      <a-entity mindar-image-target="targetIndex: 0">
+        <a-plane
+          width="1"
+          height="1.5"
+          position="0 0 0"
+          rotation="0 0 0"
+          material="transparent: true"
+          video-material="video: #vid2"
+          visible="false"
+        ></a-plane>
+      </a-entity>
+
+      <a-entity mindar-image-target="targetIndex: 1">
+        <a-plane
+          width="1.5"
+          height="1"
+          position="0 0 0"
+          rotation="0 0 0"
+          material="transparent: true"
+          video-material="video: #vid1"
+          visible="false"
+        ></a-plane>
+      </a-entity>
+    </a-scene>
+  </div>
+  <div id="playButton" class="play-button"></div>
+
+  <script>
+    AFRAME.registerComponent('video-material', {
+      schema: {
+        video: { type: 'selector' }
+      },
+
+      init: function () {
+        const mesh = this.el.getObject3D('mesh');
+        const video = this.data.video;
+
+        const vertexShader = `
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `;
+
+        const fragmentShader = `
+          varying vec2 vUv;
+          uniform sampler2D videoTexture;
+          
+          void main() {
+            vec4 color = texture2D(videoTexture, vUv);
+            
+            // Calculate distance from edges
+            float dx = min(vUv.x, 1.0 - vUv.x);
+            float dy = min(vUv.y, 1.0 - vUv.y);
+            float edgeDistance = min(dx, dy);
+            
+            // Create soft edges
+            float fadeWidth = 0.15; // Adjust this value to control fade width
+            float opacity = smoothstep(0.0, fadeWidth, edgeDistance);
+            
+            // Apply overall transparency
+            float globalOpacity = 0.9; // Adjust this value for overall transparency
+            
+            gl_FragColor = vec4(color.rgb, color.a * opacity * globalOpacity);
+          }
+        `;
+
+        const videoTexture = new THREE.VideoTexture(video);
+        videoTexture.minFilter = THREE.LinearFilter;
+        videoTexture.magFilter = THREE.LinearFilter;
+        videoTexture.format = THREE.RGBAFormat;
+
+        const material = new THREE.ShaderMaterial({
+          vertexShader: vertexShader,
+          fragmentShader: fragmentShader,
+          uniforms: {
+            videoTexture: { value: videoTexture }
+          },
+          transparent: true
+        });
+
+        mesh.material = material;
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const video1 = document.getElementById('vid1');
+      const video2 = document.getElementById('vid2');
+      const playButton = document.getElementById('playButton');
+      const loadingScreen = document.getElementById('loading-screen');
+      
+      let currentVideo = null;
+      let currentPlane = null;
+      let targetDetected = false;
+
+      const sceneEl = document.querySelector('a-scene');
+      
+      function setupVideo(video) {
+        video.addEventListener('loadedmetadata', () => {
+          console.log(video.id + ' metadata loaded');
+        });
+      }
+
+      [video1, video2].forEach(setupVideo);
+
+      sceneEl.addEventListener('arReady', () => {
+        loadingScreen.style.display = 'none';
+      });
+
+      playButton.addEventListener('click', () => {
+        if (targetDetected && currentVideo) {
+          playButton.style.display = 'none';
+          currentPlane.setAttribute('visible', true);
+          currentVideo.play().catch(error => {
+            console.error('Error playing video:', error);
+            playButton.style.display = 'flex';
+          });
+        }
+      });
+
+      function pauseOtherVideos(currentVid) {
+        [video1, video2].forEach(video => {
+          if (video !== currentVid) {
+            video.pause();
+            video.currentTime = 0;
+          }
+        });
+      }
+
+      [0, 1].forEach(targetIndex => {
+        const targetEntity = document.querySelector(`a-entity[mindar-image-target="targetIndex: ${targetIndex}"]`);
+        const plane = targetEntity.querySelector('a-plane');
+        
+        targetEntity.addEventListener('targetFound', () => {
+          console.log(`Target ${targetIndex} found`);
+          targetDetected = true;
+          currentVideo = targetIndex === 0 ? video2 : video1;
+          currentPlane = plane;
+          pauseOtherVideos(currentVideo);
+          playButton.style.display = 'flex';
+        });
+
+        targetEntity.addEventListener('targetLost', () => {
+          console.log(`Target ${targetIndex} lost`);
+          if (currentVideo === (targetIndex === 0 ? video2 : video1)) {
+            currentVideo.pause();
+            currentVideo.currentTime = 0;
+            playButton.style.display = 'none';
+            targetDetected = false;
+            plane.setAttribute('visible', false);
+          }
+        });
+      });
+
+      [video1, video2].forEach(video => {
+        video.addEventListener('play', () => {
+          pauseOtherVideos(video);
+        });
+        video.muted = false;
+      });
+    });
+  </script>
+</body>
+</html>
