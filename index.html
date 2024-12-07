@@ -76,7 +76,7 @@
         <video id="vid4" src="assets/asset4.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
         <video id="vid5" src="assets/asset5.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
         <video id="vid6" src="assets/asset6.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
-        <video id="vid7" src="assets/asset7.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="vid8" src="assets/asset8.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
       </a-assets>
 
       <a-entity mindar-image-target="targetIndex: 0">
@@ -104,7 +104,10 @@
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 6">
-        <a-plane width="1" height="1.5" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid7" visible="false"></a-plane>
+      </a-entity>
+
+      <a-entity mindar-image-target="targetIndex: 7">
+        <a-plane width="1" height="1.5" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid8" visible="false"></a-plane>
       </a-entity>
 
     </a-scene>
@@ -164,10 +167,19 @@
     });
 
     document.addEventListener('DOMContentLoaded', function() {
-      const videos = Array.from({ length: 7 }, (_, i) => document.getElementById(`vid${i + 1}`));
+      const videos = [
+        document.getElementById('vid1'),
+        document.getElementById('vid2'),
+        document.getElementById('vid3'),
+        document.getElementById('vid4'),
+        document.getElementById('vid5'),
+        document.getElementById('vid6'),
+        null,  // Empty slot for index 6
+        document.getElementById('vid8')
+      ];
       
-      const targets = Array.from({ length: 7 }, (_, i) => ({
-        video: videos[i],
+      const targets = videos.map((video, i) => ({
+        video: video,
         entity: document.querySelector(`a-entity[mindar-image-target="targetIndex: ${i}"]`),
         plane: document.querySelector(`a-entity[mindar-image-target="targetIndex: ${i}"] a-plane`)
       }));
@@ -178,8 +190,10 @@
 
       // Preload videos
       videos.forEach(video => {
-        video.load();
-        video.currentTime = 0.001;
+        if (video) {
+          video.load();
+          video.currentTime = 0.001;
+        }
       });
 
       document.querySelector('a-scene').addEventListener('arReady', () => {
@@ -188,7 +202,7 @@
 
       function pauseAllVideosExcept(activeVideo) {
         videos.forEach(video => {
-          if (video !== activeVideo) {
+          if (video && video !== activeVideo) {
             video.pause();
             video.currentTime = 0;
           }
@@ -196,7 +210,7 @@
       }
 
       playButton.addEventListener('click', () => {
-        if (currentTarget) {
+        if (currentTarget && currentTarget.video) {
           const startPlayback = async () => {
             currentTarget.plane.setAttribute('visible', true);
             playButton.style.display = 'none';
@@ -219,6 +233,8 @@
       });
 
       targets.forEach(target => {
+        if (!target.video) return; // Skip for empty target (index 6)
+        
         target.entity.addEventListener('targetFound', () => {
           currentTarget = target;
           target.video.currentTime = 0;
