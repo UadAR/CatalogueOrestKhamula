@@ -109,14 +109,14 @@
       loading-screen="enabled: false"
     >
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-      <a-assets>
+      <a-assets timeout="10000">
         <video id="vid1" src="assets/asset.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
         <video id="vid2" src="assets/asset2.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
         <video id="vid3" src="assets/asset3.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
         <video id="vid4" src="assets/asset4.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
         <video id="vid5" src="assets/asset5.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
         <video id="vid6" src="assets/asset6.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
-        <video id="vid8" src="assets/asset8.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="vid8" src="assets/asset8.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline muted></video>
         <video id="vid12" src="assets/asset12.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
       </a-assets>
 
@@ -144,20 +144,8 @@
         <a-plane width="1.8" height="0.8" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid6" visible="false"></a-plane>
       </a-entity>
 
-      <a-entity mindar-image-target="targetIndex: 6">
-      </a-entity>
-
       <a-entity mindar-image-target="targetIndex: 7">
         <a-plane width="1" height="1.95" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid8" visible="false"></a-plane>
-      </a-entity>
-
-      <a-entity mindar-image-target="targetIndex: 8">
-      </a-entity>
-
-      <a-entity mindar-image-target="targetIndex: 9">
-      </a-entity>
-
-      <a-entity mindar-image-target="targetIndex: 10">
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 11">
@@ -168,7 +156,6 @@
   </div>
   <div id="playButton" class="play-button"></div>
 
-<!-- JavaScript continues in part 2 -->
   <script>
     AFRAME.registerComponent('video-material', {
       schema: {
@@ -222,7 +209,7 @@
       }
     });
 
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', async function() {
       const loadingProgress = document.getElementById('loading-progress');
       const loadingScreen = document.getElementById('loading-screen');
       const arScene = document.getElementById('ar-scene');
@@ -233,6 +220,22 @@
       const scene = document.querySelector('a-scene');
       scene.renderer.setClearColor(0x000000, 0);
       scene.object3D.background = null;
+
+      // Preload videos
+      const preloadVideo = async (video) => {
+        if (!video) return Promise.resolve();
+        return new Promise((resolve) => {
+          video.load();
+          video.addEventListener('loadeddata', () => {
+            resolve();
+          });
+          // Add error handling
+          video.addEventListener('error', () => {
+            console.error('Error loading video:', video.src);
+            resolve();
+          });
+        });
+      };
 
       const videos = [
         document.getElementById('vid1'),
@@ -248,6 +251,10 @@
         null,
         document.getElementById('vid12')
       ];
+
+      // Preload all videos
+      loadingProgress.textContent = 'Loading videos...';
+      await Promise.all(videos.filter(v => v).map(preloadVideo));
 
       const targets = videos.map((video, i) => ({
         video: video,
@@ -265,7 +272,6 @@
           .then(function(stream) {
             stream.getTracks().forEach(track => track.stop());
             
-            // Initialize AR after camera permission
             scene.addEventListener('arReady', function() {
               loadingScreen.style.display = 'none';
               loadingProgress.style.display = 'none';
@@ -290,19 +296,27 @@
             playButton.addEventListener('click', () => {
               if (currentTarget && currentTarget.video) {
                 const startPlayback = async () => {
-                  currentTarget.plane.setAttribute('visible', true);
-                  playButton.style.display = 'none';
                   try {
+                    // Start with low volume and fade in
+                    currentTarget.video.volume = 0;
                     await currentTarget.video.play();
-                  } catch (err) {
-                    setTimeout(async () => {
-                      try {
-                        await currentTarget.video.play();
-                      } catch (error) {
-                        playButton.style.display = 'flex';
-                        currentTarget.plane.setAttribute('visible', false);
+                    currentTarget.plane.setAttribute('visible', true);
+                    playButton.style.display = 'none';
+                    
+                    // Fade in volume
+                    let vol = 0;
+                    const fadeInterval = setInterval(() => {
+                      if (vol < 1) {
+                        vol += 0.1;
+                        currentTarget.video.volume = vol;
+                      } else {
+                        clearInterval(fadeInterval);
                       }
-                    }, 100);
+                    }, 50);
+                  } catch (err) {
+                    console.error('Playback error:', err);
+                    playButton.style.display = 'flex';
+                    currentTarget.plane.setAttribute('visible', false);
                   }
                 };
                 startPlayback();
@@ -341,11 +355,19 @@
                 }
               });
 
-              target.video.muted = false;
+              // Add error handling for video playback
+              target.video.addEventListener('error', (e) => {
+                console.error('Video error:', e);
+                if (currentTarget === target) {
+                  playButton.style.display = 'flex';
+                  target.plane.setAttribute('visible', false);
+                }
+              });
             });
           })
           .catch(function(err) {
             loadingProgress.textContent = 'Camera permission denied';
+            console.error('Camera error:', err);
           });
       }, 2000);
     });
