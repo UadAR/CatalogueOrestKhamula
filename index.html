@@ -18,6 +18,7 @@
       height: 100%;
       margin: 0;
       overflow: hidden;
+      position: fixed;
     }
 
     #loading-screen {
@@ -80,6 +81,7 @@
       position: fixed;
       top: 0;
       left: 0;
+      z-index: 1;
     }
 
     a-scene {
@@ -106,7 +108,7 @@
     <a-scene
       mindar-image="imageTargetSrc: ./targets.mind; filterMinCF:0.0001; filterBeta:0.001;"
       embedded
-      renderer="colorManagement: true;"
+      renderer="colorManagement: true; alpha: true; antialias: true; precision: high;"
       vr-mode-ui="enabled: false"
       device-orientation-permission-ui="enabled: false"
     >
@@ -123,34 +125,34 @@
       </a-assets>
 
       <a-entity mindar-image-target="targetIndex: 0">
-        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid1" visible="false"></a-plane>
+        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true; alphaTest: 0.5" video-material="video: #vid1" visible="false"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 1">
-        <a-plane width="1.2" height="2.34" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid2" visible="false"></a-plane>
+        <a-plane width="1.2" height="2.34" position="0 0 0" rotation="0 0 0" material="transparent: true; alphaTest: 0.5" video-material="video: #vid2" visible="false"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 2">
-        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid3" visible="false"></a-plane>
+        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true; alphaTest: 0.5" video-material="video: #vid3" visible="false"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 3">
-        <a-plane width="1.2" height="1.5" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid4" visible="false"></a-plane>
+        <a-plane width="1.2" height="1.5" position="0 0 0" rotation="0 0 0" material="transparent: true; alphaTest: 0.5" video-material="video: #vid4" visible="false"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 4">
-        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid5" visible="false"></a-plane>
+        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true; alphaTest: 0.5" video-material="video: #vid5" visible="false"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 5">
-        <a-plane width="1.8" height="0.8" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid6" visible="false"></a-plane>
+        <a-plane width="1.8" height="0.8" position="0 0 0" rotation="0 0 0" material="transparent: true; alphaTest: 0.5" video-material="video: #vid6" visible="false"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 6">
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 7">
-        <a-plane width="1" height="1.95" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid8" visible="false"></a-plane>
+        <a-plane width="1" height="1.95" position="0 0 0" rotation="0 0 0" material="transparent: true; alphaTest: 0.5" video-material="video: #vid8" visible="false"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 8">
@@ -163,7 +165,7 @@
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 11">
-        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid12" visible="false"></a-plane>
+        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true; alphaTest: 0.5" video-material="video: #vid12" visible="false"></a-plane>
       </a-entity>
 
     </a-scene>
@@ -215,97 +217,109 @@
           uniforms: {
             videoTexture: { value: videoTexture }
           },
-          transparent: true
+          transparent: true,
+          alphaTest: 0.01
         });
 
         mesh.material = material;
+
+        // Force transparent background
+        const scene = document.querySelector('a-scene').object3D;
+        const renderer = document.querySelector('a-scene').renderer;
+        renderer.setClearColor(0x000000, 0);
+        scene.background = null;
       }
     });
 
     document.addEventListener('DOMContentLoaded', function() {
+      // Initialize scene with transparent background
+      const scene = document.querySelector('a-scene');
+      scene.addEventListener('loaded', () => {
+        scene.renderer.setClearColor(0x000000, 0);
+        scene.object3D.background = null;
+      });
+
       const loadingProgress = document.getElementById('loading-progress');
       const loadingScreen = document.getElementById('loading-screen');
+      const playButton = document.getElementById('playButton');
       
       // Show loading screen immediately
       loadingScreen.style.display = 'flex';
       loadingProgress.style.display = 'block';
       loadingProgress.textContent = 'Loading...';
 
-      // Wait for 2 seconds before starting camera
+      // Initialize variables
+      let assetsLoaded = false;
+      let arReady = false;
+      let currentTarget = null;
+
+      const videos = [
+        document.getElementById('vid1'),
+        document.getElementById('vid2'),
+        document.getElementById('vid3'),
+        document.getElementById('vid4'),
+        document.getElementById('vid5'),
+        document.getElementById('vid6'),
+        null,  // Empty slot for index 6
+        document.getElementById('vid8'),
+        null,  // Empty slot for index 8
+        null,  // Empty slot for index 9
+        null,  // Empty slot for index 10
+        document.getElementById('vid12')
+      ];
+
+      const targets = videos.map((video, i) => ({
+        video: video,
+        entity: document.querySelector(`a-entity[mindar-image-target="targetIndex: ${i}"]`),
+        plane: document.querySelector(`a-entity[mindar-image-target="targetIndex: ${i}"] a-plane`),
+        loaded: false
+      }));
+
+      // Video loading functions
+      async function loadVideo(video) {
+        if (!video || video.loaded) return;
+        
+        try {
+          video.load();
+          await new Promise((resolve, reject) => {
+            video.onloadeddata = resolve;
+            video.onerror = reject;
+          });
+          video.currentTime = 0.001;
+          return true;
+        } catch (error) {
+          console.warn('Error loading video:', error);
+          return false;
+        }
+      }
+
+      async function loadInitialVideos() {
+        loadingProgress.textContent = 'Loading initial content...';
+        const initialVideos = videos.filter(v => v).slice(0, 2);
+        await Promise.all(initialVideos.map(loadVideo));
+        assetsLoaded = true;
+        checkReady();
+      }
+
+      async function loadRemainingVideos() {
+        const remainingVideos = videos.filter(v => v).slice(2);
+        for (const video of remainingVideos) {
+          await loadVideo(video);
+        }
+      }
+
+      function checkReady() {
+        if (assetsLoaded && arReady) {
+          loadingScreen.style.display = 'none';
+          loadingProgress.style.display = 'none';
+          loadRemainingVideos();
+        }
+      }
+
+      // Start initialization after 2 seconds
       setTimeout(() => {
-        // Initialize MindAR
-        const sceneEl = document.querySelector('a-scene');
-        const arSystem = sceneEl.systems["mindar-image-system"];
-
-        let assetsLoaded = false;
-        let arReady = false;
-
-        const videos = [
-          document.getElementById('vid1'),
-          document.getElementById('vid2'),
-          document.getElementById('vid3'),
-          document.getElementById('vid4'),
-          document.getElementById('vid5'),
-          document.getElementById('vid6'),
-          null,  // Empty slot for index 6
-          document.getElementById('vid8'),
-          null,  // Empty slot for index 8
-          null,  // Empty slot for index 9
-          null,  // Empty slot for index 10
-          document.getElementById('vid12')
-        ];
-
-        const targets = videos.map((video, i) => ({
-          video: video,
-          entity: document.querySelector(`a-entity[mindar-image-target="targetIndex: ${i}"]`),
-          plane: document.querySelector(`a-entity[mindar-image-target="targetIndex: ${i}"] a-plane`),
-          loaded: false
-        }));
-
-        async function loadVideo(video) {
-          if (!video || video.loaded) return;
-          
-          try {
-            video.load();
-            await new Promise((resolve, reject) => {
-              video.onloadeddata = resolve;
-              video.onerror = reject;
-            });
-            video.currentTime = 0.001;
-            return true;
-          } catch (error) {
-            console.warn('Error loading video:', error);
-            return false;
-          }
-        }
-
-        async function loadInitialVideos() {
-          loadingProgress.textContent = 'Loading initial content...';
-          
-          const initialVideos = videos.filter(v => v).slice(0, 2);
-          await Promise.all(initialVideos.map(loadVideo));
-          
-          assetsLoaded = true;
-          checkReady();
-        }
-
-        async function loadRemainingVideos() {
-          const remainingVideos = videos.filter(v => v).slice(2);
-          for (const video of remainingVideos) {
-            await loadVideo(video);
-          }
-        }
-
-        function checkReady() {
-          if (assetsLoaded && arReady) {
-            loadingScreen.style.display = 'none';
-            loadingProgress.style.display = 'none';
-            loadRemainingVideos();
-          }
-        }
-
-        // Handle camera permission after 2 seconds
         loadingProgress.textContent = 'Starting camera...';
+        // Handle camera permission
         navigator.mediaDevices.getUserMedia({ video: true })
           .then(function(stream) {
             stream.getTracks().forEach(track => track.stop());
@@ -316,15 +330,17 @@
             loadingProgress.textContent = 'Camera permission denied';
           });
 
-        sceneEl.addEventListener('arReady', () => {
+        // Event listeners for AR system
+        scene.addEventListener('arReady', () => {
           arReady = true;
           checkReady();
         });
 
-        sceneEl.addEventListener('arError', () => {
+        scene.addEventListener('arError', () => {
           loadingProgress.textContent = 'AR Error - Please refresh';
         });
 
+        // Video control functions
         function pauseAllVideosExcept(activeVideo) {
           videos.forEach(video => {
             if (video && video !== activeVideo) {
@@ -352,9 +368,7 @@
           }
         }
 
-        const playButton = document.getElementById('playButton');
-        let currentTarget = null;
-
+        // Play button event listener
         playButton.addEventListener('click', () => {
           if (currentTarget && currentTarget.video) {
             const startPlayback = async () => {
@@ -377,6 +391,7 @@
           }
         });
 
+        // Target event listeners
         targets.forEach(target => {
           if (!target.video) return;
           
@@ -407,7 +422,7 @@
 
           target.video.muted = false;
         });
-      }, 2000); // 2 second delay before starting camera and AR
+      }, 2000); // 2 second delay before starting
     });
   </script>
 </body>
