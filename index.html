@@ -109,7 +109,7 @@
       loading-screen="enabled: false"
     >
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-      <a-assets timeout="10000">
+      <a-assets>
         <video id="vid1" src="assets/asset.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
         <video id="vid2" src="assets/asset2.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
         <video id="vid3" src="assets/asset3.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
@@ -234,21 +234,6 @@
       scene.renderer.setClearColor(0x000000, 0);
       scene.object3D.background = null;
 
-      // Preload videos
-      const preloadVideo = async (video) => {
-        if (!video) return Promise.resolve();
-        return new Promise((resolve) => {
-          const checkLoaded = () => {
-            if (video.readyState >= 4) {
-              resolve();
-            } else {
-              video.addEventListener('loadeddata', resolve, { once: true });
-            }
-          };
-          checkLoaded();
-        });
-      };
-
       const videos = [
         document.getElementById('vid1'),
         document.getElementById('vid2'),
@@ -273,21 +258,9 @@
 
       let currentTarget = null;
 
-      // Pre-buffer videos
-      const preloadVideos = async () => {
-        loadingProgress.textContent = 'Loading videos...';
-        const preloadPromises = videos
-          .filter(video => video)
-          .map(video => preloadVideo(video));
-        await Promise.all(preloadPromises);
-      };
-
-      // Initialize AR experience
-      const initAR = async () => {
+      const initCamera = async () => {
         try {
-          await preloadVideos();
           loadingProgress.textContent = 'Starting camera...';
-          
           const stream = await navigator.mediaDevices.getUserMedia({ video: true });
           stream.getTracks().forEach(track => track.stop());
           
@@ -301,6 +274,7 @@
             loadingProgress.textContent = 'AR Error - Please refresh';
           });
 
+          // Initialize video handling
           const pauseAllVideosExcept = (activeVideo) => {
             videos.forEach(video => {
               if (video && video !== activeVideo) {
@@ -310,32 +284,17 @@
             });
           };
 
-          playButton.addEventListener('click', async () => {
-            if (currentTarget && currentTarget.video) {
-              currentTarget.plane.setAttribute('visible', true);
-              playButton.style.display = 'none';
-              
-              try {
-                await currentTarget.video.play();
-              } catch (err) {
-                console.error('Video playback error:', err);
-                playButton.style.display = 'flex';
-                currentTarget.plane.setAttribute('visible', false);
-              }
-            }
-          });
-
+          // Set up event listeners for targets
           targets.forEach(target => {
             if (!target.video) return;
 
-            // Pre-warm video playback
+            // Ensure video is loaded
             target.video.load();
-            target.video.currentTime = 0;
-
-            target.entity.addEventListener('targetFound', async () => {
+            
+            target.entity.addEventListener('targetFound', () => {
               currentTarget = target;
-              pauseAllVideosExcept(target.video);
               target.video.currentTime = 0;
+              pauseAllVideosExcept(target.video);
               target.plane.setAttribute('visible', false);
               playButton.style.display = 'flex';
             });
@@ -354,29 +313,48 @@
               pauseAllVideosExcept(target.video);
             });
 
-            target.video.addEventListener('ended', async () => {
+            target.video.addEventListener('ended', () => {
               if (target.video.loop) {
                 target.video.currentTime = 0;
-                try {
-                  await target.video.play();
-                } catch (err) {
-                  console.error('Loop playback error:', err);
-                }
+                target.video.play().catch(() => {});
               }
             });
 
-            // Enable audio
             target.video.muted = false;
           });
 
+          // Play button handler
+          playButton.addEventListener('click', async () => {
+            if (currentTarget && currentTarget.video) {
+              currentTarget.plane.setAttribute('visible', true);
+              playButton.style.display = 'none';
+              
+              try {
+                await currentTarget.video.play();
+              } catch (err) {
+                console.error('Playback error:', err);
+                // Retry once on error
+                setTimeout(async () => {
+                  try {
+                    await currentTarget.video.play();
+                  } catch (retryErr) {
+                    console.error('Retry playback error:', retryErr);
+                    playButton.style.display = 'flex';
+                    currentTarget.plane.setAttribute('visible', false);
+                  }
+                }, 100);
+              }
+            }
+          });
+
         } catch (err) {
-          console.error('Initialization error:', err);
+          console.error('Camera initialization error:', err);
           loadingProgress.textContent = 'Camera permission denied';
         }
       };
 
-      // Start initialization after a short delay
-      setTimeout(initAR, 1000);
+      // Start initialization immediately
+      initCamera();
     });
   </script>
 </body>
