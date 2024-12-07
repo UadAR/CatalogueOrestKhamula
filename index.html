@@ -109,7 +109,7 @@
       loading-screen="enabled: false"
     >
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-      <a-assets>
+      <a-assets timeout="10000">
         <video id="vid1" src="assets/asset.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
         <video id="vid2" src="assets/asset2.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
         <video id="vid3" src="assets/asset3.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
@@ -168,7 +168,6 @@
   </div>
   <div id="playButton" class="play-button"></div>
 
-<!-- JavaScript continues in part 2 -->
   <script>
     AFRAME.registerComponent('video-material', {
       schema: {
@@ -226,6 +225,7 @@
       const loadingProgress = document.getElementById('loading-progress');
       const loadingScreen = document.getElementById('loading-screen');
       const arScene = document.getElementById('ar-scene');
+      const playButton = document.getElementById('playButton');
       
       loadingScreen.style.display = 'flex';
       loadingProgress.style.display = 'block';
@@ -233,6 +233,21 @@
       const scene = document.querySelector('a-scene');
       scene.renderer.setClearColor(0x000000, 0);
       scene.object3D.background = null;
+
+      // Preload videos
+      const preloadVideo = async (video) => {
+        if (!video) return Promise.resolve();
+        return new Promise((resolve) => {
+          const checkLoaded = () => {
+            if (video.readyState >= 4) {
+              resolve();
+            } else {
+              video.addEventListener('loadeddata', resolve, { once: true });
+            }
+          };
+          checkLoaded();
+        });
+      };
 
       const videos = [
         document.getElementById('vid1'),
@@ -258,96 +273,110 @@
 
       let currentTarget = null;
 
-      setTimeout(() => {
-        loadingProgress.textContent = 'Starting camera...';
-        
-        navigator.mediaDevices.getUserMedia({ video: true })
-          .then(function(stream) {
-            stream.getTracks().forEach(track => track.stop());
-            
-            // Initialize AR after camera permission
-            scene.addEventListener('arReady', function() {
-              loadingScreen.style.display = 'none';
-              loadingProgress.style.display = 'none';
-              arScene.classList.add('ready');
-            });
+      // Pre-buffer videos
+      const preloadVideos = async () => {
+        loadingProgress.textContent = 'Loading videos...';
+        const preloadPromises = videos
+          .filter(video => video)
+          .map(video => preloadVideo(video));
+        await Promise.all(preloadPromises);
+      };
 
-            scene.addEventListener('arError', function() {
-              loadingProgress.textContent = 'AR Error - Please refresh';
-            });
+      // Initialize AR experience
+      const initAR = async () => {
+        try {
+          await preloadVideos();
+          loadingProgress.textContent = 'Starting camera...';
+          
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          stream.getTracks().forEach(track => track.stop());
+          
+          scene.addEventListener('arReady', () => {
+            loadingScreen.style.display = 'none';
+            loadingProgress.style.display = 'none';
+            arScene.classList.add('ready');
+          });
 
-            function pauseAllVideosExcept(activeVideo) {
-              videos.forEach(video => {
-                if (video && video !== activeVideo) {
-                  video.pause();
-                  video.currentTime = 0;
-                }
-              });
+          scene.addEventListener('arError', () => {
+            loadingProgress.textContent = 'AR Error - Please refresh';
+          });
+
+          const pauseAllVideosExcept = (activeVideo) => {
+            videos.forEach(video => {
+              if (video && video !== activeVideo) {
+                video.pause();
+                video.currentTime = 0;
+              }
+            });
+          };
+
+          playButton.addEventListener('click', async () => {
+            if (currentTarget && currentTarget.video) {
+              currentTarget.plane.setAttribute('visible', true);
+              playButton.style.display = 'none';
+              
+              try {
+                await currentTarget.video.play();
+              } catch (err) {
+                console.error('Video playback error:', err);
+                playButton.style.display = 'flex';
+                currentTarget.plane.setAttribute('visible', false);
+              }
             }
+          });
 
-            const playButton = document.getElementById('playButton');
+          targets.forEach(target => {
+            if (!target.video) return;
 
-            playButton.addEventListener('click', () => {
-              if (currentTarget && currentTarget.video) {
-                const startPlayback = async () => {
-                  currentTarget.plane.setAttribute('visible', true);
-                  playButton.style.display = 'none';
-                  try {
-                    await currentTarget.video.play();
-                  } catch (err) {
-                    setTimeout(async () => {
-                      try {
-                        await currentTarget.video.play();
-                      } catch (error) {
-                        playButton.style.display = 'flex';
-                        currentTarget.plane.setAttribute('visible', false);
-                      }
-                    }, 100);
-                  }
-                };
-                startPlayback();
+            // Pre-warm video playback
+            target.video.load();
+            target.video.currentTime = 0;
+
+            target.entity.addEventListener('targetFound', async () => {
+              currentTarget = target;
+              pauseAllVideosExcept(target.video);
+              target.video.currentTime = 0;
+              target.plane.setAttribute('visible', false);
+              playButton.style.display = 'flex';
+            });
+
+            target.entity.addEventListener('targetLost', () => {
+              if (currentTarget === target) {
+                target.video.pause();
+                target.video.currentTime = 0;
+                playButton.style.display = 'none';
+                target.plane.setAttribute('visible', false);
+                currentTarget = null;
               }
             });
 
-            targets.forEach(target => {
-              if (!target.video) return;
-
-              target.entity.addEventListener('targetFound', () => {
-                currentTarget = target;
-                target.video.currentTime = 0;
-                pauseAllVideosExcept(target.video);
-                target.plane.setAttribute('visible', false);
-                playButton.style.display = 'flex';
-              });
-
-              target.entity.addEventListener('targetLost', () => {
-                if (currentTarget === target) {
-                  target.video.pause();
-                  target.video.currentTime = 0;
-                  playButton.style.display = 'none';
-                  target.plane.setAttribute('visible', false);
-                  currentTarget = null;
-                }
-              });
-
-              target.video.addEventListener('play', () => {
-                pauseAllVideosExcept(target.video);
-              });
-
-              target.video.addEventListener('ended', () => {
-                if (target.video.loop) {
-                  target.video.currentTime = 0;
-                  target.video.play().catch(() => {});
-                }
-              });
-
-              target.video.muted = false;
+            target.video.addEventListener('play', () => {
+              pauseAllVideosExcept(target.video);
             });
-          })
-          .catch(function(err) {
-            loadingProgress.textContent = 'Camera permission denied';
+
+            target.video.addEventListener('ended', async () => {
+              if (target.video.loop) {
+                target.video.currentTime = 0;
+                try {
+                  await target.video.play();
+                } catch (err) {
+                  console.error('Loop playback error:', err);
+                }
+              }
+            });
+
+            // Enable audio
+            target.video.muted = false;
           });
-      }, 2000);
+
+        } catch (err) {
+          console.error('Initialization error:', err);
+          loadingProgress.textContent = 'Camera permission denied';
+        }
+      };
+
+      // Start initialization after a short delay
+      setTimeout(initAR, 1000);
     });
   </script>
 </body>
