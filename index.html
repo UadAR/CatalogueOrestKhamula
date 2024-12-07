@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AR Experience</title>
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.js"></script>
@@ -11,7 +11,6 @@
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      -webkit-box-sizing: border-box;
     }
 
     html, body {
@@ -27,41 +26,14 @@
       position: fixed;
       top: 0;
       left: 0;
-      right: 0;
-      bottom: 0;
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
+      background: url('assets/mainbackground.png') no-repeat center center;
+      background-size: cover;
       z-index: 1000;
       display: flex;
       justify-content: center;
       align-items: center;
-      background-color: black;
-    }
-
-    .background-container {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow: hidden;
-    }
-
-    #background-image {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      object-position: center;
-      visibility: hidden;
     }
 
     .play-button {
@@ -93,19 +65,15 @@
 
     #loading-progress {
       position: fixed;
-      top: 50%;
+      bottom: 20px;
       left: 50%;
-      transform: translate(-50%, -50%);
+      transform: translateX(-50%);
       color: white;
       background: rgba(0, 0, 0, 0.5);
-      padding: 12px 24px;
+      padding: 8px 16px;
       border-radius: 20px;
       font-family: Arial, sans-serif;
-      z-index: 1001;
-      font-size: 18px;
-      white-space: nowrap;
-      text-align: center;
-      pointer-events: none;
+      z-index: 1000;
     }
 
     #ar-scene {
@@ -126,28 +94,10 @@
     a-scene {
       background-color: transparent !important;
     }
-
-    @media (orientation: portrait) {
-      #background-image {
-        height: 100vh;
-        width: auto;
-      }
-    }
-
-    @media (orientation: landscape) {
-      #background-image {
-        width: 100vw;
-        height: auto;
-      }
-    }
   </style>
 </head>
 <body>
-  <div id="loading-screen">
-    <div class="background-container">
-      <img id="background-image" src="assets/mainbackground.png" alt="Loading Background">
-    </div>
-  </div>
+  <div id="loading-screen"></div>
   <div id="loading-progress">Loading...</div>
   <div id="ar-scene">
     <a-scene
@@ -169,7 +119,8 @@
         <video id="vid8" src="assets/asset8.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
         <video id="vid12" src="assets/asset12.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
       </a-assets>
-<a-entity mindar-image-target="targetIndex: 0">
+
+      <a-entity mindar-image-target="targetIndex: 0">
         <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid1" visible="false"></a-plane>
       </a-entity>
 
@@ -217,6 +168,7 @@
   </div>
   <div id="playButton" class="play-button"></div>
 
+<!-- JavaScript continues in part 2 -->
   <script>
     AFRAME.registerComponent('video-material', {
       schema: {
@@ -274,32 +226,6 @@
       const loadingProgress = document.getElementById('loading-progress');
       const loadingScreen = document.getElementById('loading-screen');
       const arScene = document.getElementById('ar-scene');
-      const backgroundImage = document.getElementById('background-image');
-      
-      function adjustBackgroundSize() {
-        const img = backgroundImage;
-        const windowRatio = window.innerWidth / window.innerHeight;
-        const imageRatio = img.naturalWidth / img.naturalHeight;
-
-        if (windowRatio < imageRatio) {
-          img.style.height = '100vh';
-          img.style.width = 'auto';
-        } else {
-          img.style.width = '100vw';
-          img.style.height = 'auto';
-        }
-        img.style.visibility = 'visible';
-      }
-
-      window.addEventListener('resize', adjustBackgroundSize);
-      window.addEventListener('orientationchange', () => {
-        setTimeout(adjustBackgroundSize, 100);
-      });
-
-      backgroundImage.onload = adjustBackgroundSize;
-      if (backgroundImage.complete) {
-        adjustBackgroundSize();
-      }
       
       loadingScreen.style.display = 'flex';
       loadingProgress.style.display = 'block';
@@ -339,6 +265,7 @@
           .then(function(stream) {
             stream.getTracks().forEach(track => track.stop());
             
+            // Initialize AR after camera permission
             scene.addEventListener('arReady', function() {
               loadingScreen.style.display = 'none';
               loadingProgress.style.display = 'none';
