@@ -20,16 +20,7 @@
       height: 100%;
       background: url('assets/mainbackground.png') no-repeat center center fixed;
       background-size: cover;
-      z-index: 2;
-    }
-
-    #ar-scene {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 1;
+      z-index: 999;
     }
 
     .play-button {
@@ -43,7 +34,7 @@
       justify-content: center;
       align-items: center;
       cursor: pointer;
-      z-index: 3;
+      z-index: 1000;
     }
 
     .play-button::before {
@@ -56,6 +47,14 @@
       transform: translateX(5px);
       position: absolute;
     }
+
+    #ar-scene {
+      width: 100%;
+      height: 100%;
+      position: fixed;
+      top: 0;
+      left: 0;
+    }
   </style>
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.js"></script>
@@ -64,43 +63,65 @@
   <div id="loading-screen"></div>
   <div id="ar-scene">
     <a-scene
-      mindar-image="imageTargetSrc: ./targets.mind;"
+      mindar-image="imageTargetSrc: ./targets.mind; filterMinCF:0.0001; filterBeta:0.001"
       embedded
-      renderer="colorManagement: true"
       vr-mode-ui="enabled: false"
       device-orientation-permission-ui="enabled: false"
     >
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+      <a-assets>
+        <video id="vid1" src="assets/asset.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="vid2" src="assets/asset2.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="vid3" src="assets/asset3.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="vid4" src="assets/asset4.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="vid5" src="assets/asset5.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="vid6" src="assets/asset6.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="vid8" src="assets/asset8.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="vid12" src="assets/asset12.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+      </a-assets>
 
       <a-entity mindar-image-target="targetIndex: 0">
-        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset.mp4"></a-plane>
+        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid1" visible="false"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 1">
-        <a-plane width="1.2" height="1.8" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset2.mp4"></a-plane>
+        <a-plane width="1.2" height="1.8" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid2" visible="false"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 2">
-        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset3.mp4"></a-plane>
+        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid3" visible="false"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 3">
-        <a-plane width="1.2" height="1.5" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset4.mp4"></a-plane>
+        <a-plane width="1.2" height="1.5" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid4" visible="false"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 4">
-        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset5.mp4"></a-plane>
+        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid5" visible="false"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 5">
-        <a-plane width="1.8" height="0.8" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset6.mp4"></a-plane>
+        <a-plane width="1.8" height="0.8" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid6" visible="false"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 6">
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 7">
-        <a-plane width="1" height="1.5" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset8.mp4"></a-plane>
+        <a-plane width="1" height="1.5" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid8" visible="false"></a-plane>
+      </a-entity>
+
+      <a-entity mindar-image-target="targetIndex: 8">
+      </a-entity>
+
+      <a-entity mindar-image-target="targetIndex: 9">
+      </a-entity>
+
+      <a-entity mindar-image-target="targetIndex: 10">
+      </a-entity>
+
+      <a-entity mindar-image-target="targetIndex: 11">
+        <a-plane width="1" height="1.5" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid12" visible="false"></a-plane>
       </a-entity>
 
     </a-scene>
@@ -110,96 +131,158 @@
   <script>
     AFRAME.registerComponent('video-material', {
       schema: {
-        videoSrc: { type: 'string' }
+        video: { type: 'selector' }
       },
 
       init: function () {
-        this.video = null;
-        this.mesh = this.el.getObject3D('mesh');
-      },
+        const mesh = this.el.getObject3D('mesh');
+        const video = this.data.video;
 
-      loadVideo: function() {
-        if (this.video) return;
+        const vertexShader = `
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `;
 
-        this.video = document.createElement('video');
-        this.video.src = this.data.videoSrc;
-        this.video.crossOrigin = 'anonymous';
-        this.video.loop = true;
-        this.video.playsInline = true;
-        this.video.muted = false;
-        
-        const videoTexture = new THREE.VideoTexture(this.video);
+        const fragmentShader = `
+          varying vec2 vUv;
+          uniform sampler2D videoTexture;
+          
+          void main() {
+            vec4 color = texture2D(videoTexture, vUv);
+            float dx = min(vUv.x, 1.0 - vUv.x);
+            float dy = min(vUv.y, 1.0 - vUv.y);
+            float edgeDistance = min(dx, dy);
+            float fadeWidth = 0.15;
+            float opacity = smoothstep(0.0, fadeWidth, edgeDistance);
+            float globalOpacity = 0.8;
+            gl_FragColor = vec4(color.rgb, color.a * opacity * globalOpacity);
+          }
+        `;
+
+        const videoTexture = new THREE.VideoTexture(video);
         videoTexture.minFilter = THREE.LinearFilter;
         videoTexture.magFilter = THREE.LinearFilter;
-        
-        const material = new THREE.MeshBasicMaterial({
-          map: videoTexture,
-          transparent: true,
-          opacity: 0.9
+        videoTexture.format = THREE.RGBAFormat;
+
+        const material = new THREE.ShaderMaterial({
+          vertexShader: vertexShader,
+          fragmentShader: fragmentShader,
+          uniforms: {
+            videoTexture: { value: videoTexture }
+          },
+          transparent: true
         });
 
-        this.mesh.material = material;
-      },
-
-      unloadVideo: function() {
-        if (this.video) {
-          this.video.pause();
-          this.video.removeAttribute('src');
-          this.video.load();
-          this.video = null;
-        }
+        mesh.material = material;
       }
     });
 
     document.addEventListener('DOMContentLoaded', function() {
-      const loadingScreen = document.getElementById('loading-screen');
+      const videos = [
+        document.getElementById('vid1'),
+        document.getElementById('vid2'),
+        document.getElementById('vid3'),
+        document.getElementById('vid4'),
+        document.getElementById('vid5'),
+        document.getElementById('vid6'),
+        null,  // Empty slot for index 6
+        document.getElementById('vid8'),
+        null,  // Empty slot for index 8
+        null,  // Empty slot for index 9
+        null,  // Empty slot for index 10
+        document.getElementById('vid12')
+      ];
       
+      const targets = videos.map((video, i) => ({
+        video: video,
+        entity: document.querySelector(`a-entity[mindar-image-target="targetIndex: ${i}"]`),
+        plane: document.querySelector(`a-entity[mindar-image-target="targetIndex: ${i}"] a-plane`)
+      }));
+
+      const playButton = document.getElementById('playButton');
+      const loadingScreen = document.getElementById('loading-screen');
+      let currentTarget = null;
+
+      // Preload videos
+      videos.forEach(video => {
+        if (video) {
+          video.load();
+          video.currentTime = 0.001;
+        }
+      });
+
       document.querySelector('a-scene').addEventListener('arReady', () => {
         loadingScreen.style.display = 'none';
       });
 
-      const targets = Array.from({ length: 8 }, (_, i) => ({
-        entity: document.querySelector(`a-entity[mindar-image-target="targetIndex: ${i}"]`),
-        plane: document.querySelector(`a-entity[mindar-image-target="targetIndex: ${i}"] a-plane`),
-        videoMaterial: i !== 6 ? document.querySelector(`a-entity[mindar-image-target="targetIndex: ${i}"] a-plane`).components['video-material'] : null
-      }));
-
-      const playButton = document.getElementById('playButton');
-      let currentTarget = null;
+      function pauseAllVideosExcept(activeVideo) {
+        videos.forEach(video => {
+          if (video && video !== activeVideo) {
+            video.pause();
+            video.currentTime = 0;
+          }
+        });
+      }
 
       playButton.addEventListener('click', () => {
-        if (currentTarget?.videoMaterial?.video) {
-          currentTarget.videoMaterial.video.play()
-            .then(() => {
-              playButton.style.display = 'none';
-            })
-            .catch(() => {
-              setTimeout(() => {
-                currentTarget.videoMaterial.video.play()
-                  .then(() => {
-                    playButton.style.display = 'none';
-                  });
+        if (currentTarget && currentTarget.video) {
+          const startPlayback = async () => {
+            currentTarget.plane.setAttribute('visible', true);
+            playButton.style.display = 'none';
+            try {
+              await currentTarget.video.play();
+            } catch (err) {
+              // If first attempt fails, try again with a slight delay
+              setTimeout(async () => {
+                try {
+                  await currentTarget.video.play();
+                } catch (error) {
+                  playButton.style.display = 'flex';
+                  currentTarget.plane.setAttribute('visible', false);
+                }
               }, 100);
-            });
+            }
+          };
+          startPlayback();
         }
       });
 
       targets.forEach(target => {
-        if (!target.videoMaterial) return;
+        if (!target.video) return; // Skip for empty targets
         
         target.entity.addEventListener('targetFound', () => {
           currentTarget = target;
-          target.videoMaterial.loadVideo();
+          target.video.currentTime = 0;
+          pauseAllVideosExcept(target.video);
+          target.plane.setAttribute('visible', false);
           playButton.style.display = 'flex';
         });
 
         target.entity.addEventListener('targetLost', () => {
           if (currentTarget === target) {
-            target.videoMaterial.unloadVideo();
+            target.video.pause();
+            target.video.currentTime = 0;
             playButton.style.display = 'none';
+            target.plane.setAttribute('visible', false);
             currentTarget = null;
           }
         });
+
+        target.video.addEventListener('play', () => {
+          pauseAllVideosExcept(target.video);
+        });
+
+        target.video.addEventListener('ended', () => {
+          if (target.video.loop) {
+            target.video.currentTime = 0;
+            target.video.play().catch(() => {});
+          }
+        });
+
+        target.video.muted = false;
       });
     });
   </script>
