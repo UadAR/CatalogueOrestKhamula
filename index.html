@@ -28,12 +28,21 @@
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: url('assets/mainbackground.png') no-repeat center center;
-      background-size: cover;
       z-index: 1000;
       display: flex;
       justify-content: center;
       align-items: center;
+      overflow: hidden;
+    }
+
+    #background-image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
     }
 
     .play-button {
@@ -94,10 +103,28 @@
     a-scene {
       background-color: transparent !important;
     }
+
+    @media (orientation: portrait) {
+      #background-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+
+    @media (orientation: landscape) {
+      #background-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
   </style>
 </head>
 <body>
-  <div id="loading-screen"></div>
+  <div id="loading-screen">
+    <img id="background-image" src="assets/mainbackground.png" alt="Loading Background">
+  </div>
   <div id="loading-progress">Loading...</div>
   <div id="ar-scene">
     <a-scene
@@ -226,6 +253,12 @@
       const loadingProgress = document.getElementById('loading-progress');
       const loadingScreen = document.getElementById('loading-screen');
       const arScene = document.getElementById('ar-scene');
+      const backgroundImage = document.getElementById('background-image');
+      
+      // Ensure background image is loaded properly
+      backgroundImage.onload = function() {
+        this.style.visibility = 'visible';
+      };
       
       loadingScreen.style.display = 'flex';
       loadingProgress.style.display = 'block';
@@ -233,6 +266,14 @@
       const scene = document.querySelector('a-scene');
       scene.renderer.setClearColor(0x000000, 0);
       scene.object3D.background = null;
+
+      // Handle orientation changes
+      window.addEventListener('resize', () => {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        backgroundImage.style.width = width + 'px';
+        backgroundImage.style.height = height + 'px';
+      });
 
       const videos = [
         document.getElementById('vid1'),
