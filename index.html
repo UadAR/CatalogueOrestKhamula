@@ -70,49 +70,43 @@
     >
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
       <a-assets>
-        <video
-          id="vid1"
-          src="assets/asset.mp4"
-          preload="auto"
-          loop
-          crossorigin="anonymous"
-          playsinline
-          webkit-playsinline
-        ></video>
-        <video
-          id="vid2"
-          src="assets/asset2.mp4"
-          preload="auto"
-          loop
-          crossorigin="anonymous"
-          playsinline
-          webkit-playsinline
-        ></video>
+        <video id="vid1" src="assets/asset.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="vid2" src="assets/asset2.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="vid3" src="assets/asset3.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="vid4" src="assets/asset4.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="vid5" src="assets/asset5.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="vid6" src="assets/asset6.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="vid7" src="assets/asset7.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
       </a-assets>
 
       <a-entity mindar-image-target="targetIndex: 0">
-        <a-plane
-          width="1.5"
-          height="1"
-          position="0 0 0"
-          rotation="0 0 0"
-          material="transparent: true"
-          video-material="video: #vid1"
-          visible="false"
-        ></a-plane>
+        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid1" visible="false"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 1">
-        <a-plane
-          width="1"
-          height="1.5"
-          position="0 0 0"
-          rotation="0 0 0"
-          material="transparent: true"
-          video-material="video: #vid2"
-          visible="false"
-        ></a-plane>
+        <a-plane width="1" height="1.5" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid2" visible="false"></a-plane>
       </a-entity>
+
+      <a-entity mindar-image-target="targetIndex: 2">
+        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid3" visible="false"></a-plane>
+      </a-entity>
+
+      <a-entity mindar-image-target="targetIndex: 3">
+        <a-plane width="1" height="1.5" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid4" visible="false"></a-plane>
+      </a-entity>
+
+      <a-entity mindar-image-target="targetIndex: 4">
+        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid5" visible="false"></a-plane>
+      </a-entity>
+
+      <a-entity mindar-image-target="targetIndex: 5">
+        <a-plane width="1" height="1.5" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid6" visible="false"></a-plane>
+      </a-entity>
+
+      <a-entity mindar-image-target="targetIndex: 6">
+        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid7" visible="false"></a-plane>
+      </a-entity>
+
     </a-scene>
   </div>
   <div id="playButton" class="play-button"></div>
@@ -142,17 +136,14 @@
           void main() {
             vec4 color = texture2D(videoTexture, vUv);
             
-            // Calculate distance from edges
             float dx = min(vUv.x, 1.0 - vUv.x);
             float dy = min(vUv.y, 1.0 - vUv.y);
             float edgeDistance = min(dx, dy);
             
-            // Create soft edges
-            float fadeWidth = 0.15; // Adjust this value to control fade width
+            float fadeWidth = 0.15;
             float opacity = smoothstep(0.0, fadeWidth, edgeDistance);
             
-            // Apply overall transparency
-            float globalOpacity = 0.9; // Adjust this value for overall transparency
+            float globalOpacity = 0.9;
             
             gl_FragColor = vec4(color.rgb, color.a * opacity * globalOpacity);
           }
@@ -177,8 +168,16 @@
     });
 
     document.addEventListener('DOMContentLoaded', function() {
-      const video1 = document.getElementById('vid1');
-      const video2 = document.getElementById('vid2');
+      const videos = [
+        document.getElementById('vid1'),
+        document.getElementById('vid2'),
+        document.getElementById('vid3'),
+        document.getElementById('vid4'),
+        document.getElementById('vid5'),
+        document.getElementById('vid6'),
+        document.getElementById('vid7')
+      ];
+      
       const playButton = document.getElementById('playButton');
       const loadingScreen = document.getElementById('loading-screen');
       
@@ -194,7 +193,7 @@
         });
       }
 
-      [video1, video2].forEach(setupVideo);
+      videos.forEach(setupVideo);
 
       sceneEl.addEventListener('arReady', () => {
         loadingScreen.style.display = 'none';
@@ -212,7 +211,7 @@
       });
 
       function pauseOtherVideos(currentVid) {
-        [video1, video2].forEach(video => {
+        videos.forEach(video => {
           if (video !== currentVid) {
             video.pause();
             video.currentTime = 0;
@@ -220,14 +219,15 @@
         });
       }
 
-      [0, 1].forEach(targetIndex => {
+      // Handle all target indices
+      Array.from({length: 7}, (_, i) => i).forEach(targetIndex => {
         const targetEntity = document.querySelector(`a-entity[mindar-image-target="targetIndex: ${targetIndex}"]`);
         const plane = targetEntity.querySelector('a-plane');
         
         targetEntity.addEventListener('targetFound', () => {
           console.log(`Target ${targetIndex} found`);
           targetDetected = true;
-          currentVideo = targetIndex === 0 ? video1 : video2;
+          currentVideo = videos[targetIndex];
           currentPlane = plane;
           pauseOtherVideos(currentVideo);
           playButton.style.display = 'flex';
@@ -235,7 +235,7 @@
 
         targetEntity.addEventListener('targetLost', () => {
           console.log(`Target ${targetIndex} lost`);
-          if (currentVideo === (targetIndex === 0 ? video1 : video2)) {
+          if (currentVideo === videos[targetIndex]) {
             currentVideo.pause();
             currentVideo.currentTime = 0;
             playButton.style.display = 'none';
@@ -245,7 +245,7 @@
         });
       });
 
-      [video1, video2].forEach(video => {
+      videos.forEach(video => {
         video.addEventListener('play', () => {
           pauseOtherVideos(video);
         });
