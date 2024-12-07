@@ -20,7 +20,16 @@
       height: 100%;
       background: url('assets/mainbackground.png') no-repeat center center fixed;
       background-size: cover;
-      z-index: 999;
+      z-index: 2;
+    }
+
+    #ar-scene {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
     }
 
     .play-button {
@@ -34,7 +43,7 @@
       justify-content: center;
       align-items: center;
       cursor: pointer;
-      z-index: 1000;
+      z-index: 3;
     }
 
     .play-button::before {
@@ -47,14 +56,6 @@
       transform: translateX(5px);
       position: absolute;
     }
-
-    #ar-scene {
-      width: 100%;
-      height: 100%;
-      position: fixed;
-      top: 0;
-      left: 0;
-    }
   </style>
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.js"></script>
@@ -63,42 +64,43 @@
   <div id="loading-screen"></div>
   <div id="ar-scene">
     <a-scene
-      mindar-image="imageTargetSrc: ./targets.mind; filterMinCF:0.0001; filterBeta:0.001"
+      mindar-image="imageTargetSrc: ./targets.mind;"
       embedded
+      renderer="colorManagement: true"
       vr-mode-ui="enabled: false"
       device-orientation-permission-ui="enabled: false"
     >
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0">
-        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset.mp4" visible="false"></a-plane>
+        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset.mp4"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 1">
-        <a-plane width="1.2" height="1.8" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset2.mp4" visible="false"></a-plane>
+        <a-plane width="1.2" height="1.8" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset2.mp4"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 2">
-        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset3.mp4" visible="false"></a-plane>
+        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset3.mp4"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 3">
-        <a-plane width="1.2" height="1.5" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset4.mp4" visible="false"></a-plane>
+        <a-plane width="1.2" height="1.5" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset4.mp4"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 4">
-        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset5.mp4" visible="false"></a-plane>
+        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset5.mp4"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 5">
-        <a-plane width="1.8" height="0.8" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset6.mp4" visible="false"></a-plane>
+        <a-plane width="1.8" height="0.8" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset6.mp4"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 6">
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 7">
-        <a-plane width="1" height="1.5" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset8.mp4" visible="false"></a-plane>
+        <a-plane width="1" height="1.5" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset8.mp4"></a-plane>
       </a-entity>
 
     </a-scene>
@@ -123,46 +125,17 @@
         this.video.src = this.data.videoSrc;
         this.video.crossOrigin = 'anonymous';
         this.video.loop = true;
-        this.video.playsinline = true;
-        this.video.webkit-playsinline = true;
+        this.video.playsInline = true;
         this.video.muted = false;
         
-        const vertexShader = `
-          varying vec2 vUv;
-          void main() {
-            vUv = uv;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-          }
-        `;
-
-        const fragmentShader = `
-          varying vec2 vUv;
-          uniform sampler2D videoTexture;
-          
-          void main() {
-            vec4 color = texture2D(videoTexture, vUv);
-            float dx = min(vUv.x, 1.0 - vUv.x);
-            float dy = min(vUv.y, 1.0 - vUv.y);
-            float edgeDistance = min(dx, dy);
-            float fadeWidth = 0.15;
-            float opacity = smoothstep(0.0, fadeWidth, edgeDistance);
-            float globalOpacity = 0.8;
-            gl_FragColor = vec4(color.rgb, color.a * opacity * globalOpacity);
-          }
-        `;
-
         const videoTexture = new THREE.VideoTexture(this.video);
         videoTexture.minFilter = THREE.LinearFilter;
         videoTexture.magFilter = THREE.LinearFilter;
-        videoTexture.format = THREE.RGBAFormat;
-
-        const material = new THREE.ShaderMaterial({
-          vertexShader: vertexShader,
-          fragmentShader: fragmentShader,
-          uniforms: {
-            videoTexture: { value: videoTexture }
-          },
-          transparent: true
+        
+        const material = new THREE.MeshBasicMaterial({
+          map: videoTexture,
+          transparent: true,
+          opacity: 0.9
         });
 
         this.mesh.material = material;
@@ -179,6 +152,12 @@
     });
 
     document.addEventListener('DOMContentLoaded', function() {
+      const loadingScreen = document.getElementById('loading-screen');
+      
+      document.querySelector('a-scene').addEventListener('arReady', () => {
+        loadingScreen.style.display = 'none';
+      });
+
       const targets = Array.from({ length: 8 }, (_, i) => ({
         entity: document.querySelector(`a-entity[mindar-image-target="targetIndex: ${i}"]`),
         plane: document.querySelector(`a-entity[mindar-image-target="targetIndex: ${i}"] a-plane`),
@@ -186,68 +165,38 @@
       }));
 
       const playButton = document.getElementById('playButton');
-      const loadingScreen = document.getElementById('loading-screen');
       let currentTarget = null;
 
-      document.querySelector('a-scene').addEventListener('arReady', () => {
-        loadingScreen.style.display = 'none';
-      });
-
-      function pauseAllVideosExcept(activeVideoMaterial) {
-        targets.forEach(target => {
-          if (target.videoMaterial && target.videoMaterial !== activeVideoMaterial && target.videoMaterial.video) {
-            target.videoMaterial.video.pause();
-            if (!activeVideoMaterial || target.videoMaterial !== activeVideoMaterial) {
-              target.videoMaterial.unloadVideo();
-            }
-          }
-        });
-      }
-
       playButton.addEventListener('click', () => {
-        if (currentTarget && currentTarget.videoMaterial && currentTarget.videoMaterial.video) {
-          const startPlayback = async () => {
-            currentTarget.plane.setAttribute('visible', true);
-            playButton.style.display = 'none';
-            try {
-              await currentTarget.videoMaterial.video.play();
-            } catch (err) {
-              setTimeout(async () => {
-                try {
-                  await currentTarget.videoMaterial.video.play();
-                } catch (error) {
-                  playButton.style.display = 'flex';
-                  currentTarget.plane.setAttribute('visible', false);
-                }
+        if (currentTarget?.videoMaterial?.video) {
+          currentTarget.videoMaterial.video.play()
+            .then(() => {
+              playButton.style.display = 'none';
+            })
+            .catch(() => {
+              setTimeout(() => {
+                currentTarget.videoMaterial.video.play()
+                  .then(() => {
+                    playButton.style.display = 'none';
+                  });
               }, 100);
-            }
-          };
-          startPlayback();
+            });
         }
       });
 
       targets.forEach(target => {
-        if (!target.videoMaterial) return; // Skip for empty target (index 6)
+        if (!target.videoMaterial) return;
         
         target.entity.addEventListener('targetFound', () => {
           currentTarget = target;
           target.videoMaterial.loadVideo();
-          if (target.videoMaterial.video) {
-            target.videoMaterial.video.currentTime = 0;
-          }
-          pauseAllVideosExcept(target.videoMaterial);
-          target.plane.setAttribute('visible', false);
           playButton.style.display = 'flex';
         });
 
         target.entity.addEventListener('targetLost', () => {
           if (currentTarget === target) {
-            if (target.videoMaterial.video) {
-              target.videoMaterial.video.pause();
-            }
-            playButton.style.display = 'none';
-            target.plane.setAttribute('visible', false);
             target.videoMaterial.unloadVideo();
+            playButton.style.display = 'none';
             currentTarget = null;
           }
         });
