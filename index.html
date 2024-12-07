@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
+<!-- [Previous head section remains the same] -->
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    /* [Previous styles remain the same] */
     body, html {
       margin: 0;
       padding: 0;
@@ -97,7 +99,7 @@
           position="0 0 0"
           rotation="0 0 0"
           material="transparent: true"
-          video-material="video: #vid1"
+          video-material="video: #vid2"
           visible="false"
         ></a-plane>
       </a-entity>
@@ -109,7 +111,7 @@
           position="0 0 0"
           rotation="0 0 0"
           material="transparent: true"
-          video-material="video: #vid2"
+          video-material="video: #vid1"
           visible="false"
         ></a-plane>
       </a-entity>
@@ -142,17 +144,14 @@
           void main() {
             vec4 color = texture2D(videoTexture, vUv);
             
-            // Calculate distance from edges
             float dx = min(vUv.x, 1.0 - vUv.x);
             float dy = min(vUv.y, 1.0 - vUv.y);
             float edgeDistance = min(dx, dy);
             
-            // Create soft edges
-            float fadeWidth = 0.15; // Adjust this value to control fade width
+            float fadeWidth = 0.15;
             float opacity = smoothstep(0.0, fadeWidth, edgeDistance);
             
-            // Apply overall transparency
-            float globalOpacity = 0.9; // Adjust this value for overall transparency
+            float globalOpacity = 0.9;
             
             gl_FragColor = vec4(color.rgb, color.a * opacity * globalOpacity);
           }
@@ -227,7 +226,7 @@
         targetEntity.addEventListener('targetFound', () => {
           console.log(`Target ${targetIndex} found`);
           targetDetected = true;
-          currentVideo = targetIndex === 0 ? video1 : video2;
+          currentVideo = targetIndex === 0 ? video2 : video1;  // Kept original mapping
           currentPlane = plane;
           pauseOtherVideos(currentVideo);
           playButton.style.display = 'flex';
@@ -235,7 +234,7 @@
 
         targetEntity.addEventListener('targetLost', () => {
           console.log(`Target ${targetIndex} lost`);
-          if (currentVideo === (targetIndex === 0 ? video1 : video2)) {
+          if (currentVideo === (targetIndex === 0 ? video2 : video1)) {  // Kept original mapping
             currentVideo.pause();
             currentVideo.currentTime = 0;
             playButton.style.display = 'none';
