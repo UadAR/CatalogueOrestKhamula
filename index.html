@@ -98,7 +98,7 @@
 </head>
 <body>
   <div id="loading-screen"></div>
-  <div id="loading-progress">Starting camera...</div>
+  <div id="loading-progress">Loading...</div>
   <div id="ar-scene">
     <a-scene
       mindar-image="imageTargetSrc: ./targets.mind; filterMinCF:0.0001; filterBeta:0.001;"
@@ -109,15 +109,15 @@
       loading-screen="enabled: false"
     >
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-      <a-assets timeout="0">
-        <video id="vid1" src="assets/asset.mp4" preload="metadata" loop crossorigin="anonymous" playsinline webkit-playsinline muted></video>
-        <video id="vid2" src="assets/asset2.mp4" preload="metadata" loop crossorigin="anonymous" playsinline webkit-playsinline muted></video>
-        <video id="vid3" src="assets/asset3.mp4" preload="metadata" loop crossorigin="anonymous" playsinline webkit-playsinline muted></video>
-        <video id="vid4" src="assets/asset4.mp4" preload="metadata" loop crossorigin="anonymous" playsinline webkit-playsinline muted></video>
-        <video id="vid5" src="assets/asset5.mp4" preload="metadata" loop crossorigin="anonymous" playsinline webkit-playsinline muted></video>
-        <video id="vid6" src="assets/asset6.mp4" preload="metadata" loop crossorigin="anonymous" playsinline webkit-playsinline muted></video>
-        <video id="vid8" src="assets/asset8.mp4" preload="metadata" loop crossorigin="anonymous" playsinline webkit-playsinline muted></video>
-        <video id="vid12" src="assets/asset12.mp4" preload="metadata" loop crossorigin="anonymous" playsinline webkit-playsinline muted></video>
+      <a-assets>
+        <video id="vid1" src="assets/asset.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="vid2" src="assets/asset2.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="vid3" src="assets/asset3.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="vid4" src="assets/asset4.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="vid5" src="assets/asset5.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="vid6" src="assets/asset6.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="vid8" src="assets/asset8.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="vid12" src="assets/asset12.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
       </a-assets>
 
       <a-entity mindar-image-target="targetIndex: 0">
@@ -168,6 +168,7 @@
   </div>
   <div id="playButton" class="play-button"></div>
 
+<!-- JavaScript continues in part 2 -->
   <script>
     AFRAME.registerComponent('video-material', {
       schema: {
@@ -225,8 +226,10 @@
       const loadingProgress = document.getElementById('loading-progress');
       const loadingScreen = document.getElementById('loading-screen');
       const arScene = document.getElementById('ar-scene');
-      const playButton = document.getElementById('playButton');
       
+      loadingScreen.style.display = 'flex';
+      loadingProgress.style.display = 'block';
+
       const scene = document.querySelector('a-scene');
       scene.renderer.setClearColor(0x000000, 0);
       scene.object3D.background = null;
@@ -255,96 +258,96 @@
 
       let currentTarget = null;
 
-      // Initialize camera and AR experience
-      navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => {
-          stream.getTracks().forEach(track => track.stop());
-          
-          scene.addEventListener('arReady', () => {
-            loadingScreen.style.display = 'none';
-            loadingProgress.style.display = 'none';
-            arScene.classList.add('ready');
-          });
-
-          scene.addEventListener('arError', () => {
-            loadingProgress.textContent = 'AR Error - Please refresh';
-          });
-
-          // Pause all videos except active one
-          function pauseAllVideosExcept(activeVideo) {
-            videos.forEach(video => {
-              if (video && video !== activeVideo) {
-                video.pause();
-                video.currentTime = 0;
-              }
-            });
-          }
-
-          // Initialize video event listeners
-          targets.forEach(target => {
-            if (!target.video) return;
-
-            // Load video when needed
-            target.entity.addEventListener('targetFound', () => {
-              currentTarget = target;
-              if (!target.loaded) {
-                target.video.load();
-                target.loaded = true;
-              }
-              target.video.currentTime = 0;
-              pauseAllVideosExcept(target.video);
-              target.plane.setAttribute('visible', false);
-              playButton.style.display = 'flex';
+      setTimeout(() => {
+        loadingProgress.textContent = 'Starting camera...';
+        
+        navigator.mediaDevices.getUserMedia({ video: true })
+          .then(function(stream) {
+            stream.getTracks().forEach(track => track.stop());
+            
+            // Initialize AR after camera permission
+            scene.addEventListener('arReady', function() {
+              loadingScreen.style.display = 'none';
+              loadingProgress.style.display = 'none';
+              arScene.classList.add('ready');
             });
 
-            target.entity.addEventListener('targetLost', () => {
-              if (currentTarget === target) {
-                target.video.pause();
-                target.video.currentTime = 0;
-                playButton.style.display = 'none';
-                target.plane.setAttribute('visible', false);
-                currentTarget = null;
-              }
+            scene.addEventListener('arError', function() {
+              loadingProgress.textContent = 'AR Error - Please refresh';
             });
 
-            target.video.addEventListener('play', () => {
-              pauseAllVideosExcept(target.video);
-            });
-
-            target.video.addEventListener('ended', () => {
-              if (target.video.loop) {
-                target.video.currentTime = 0;
-                target.video.play().catch(() => {});
-              }
-            });
-
-            // Enable audio when playing
-            target.video.muted = true;
-          });
-
-          // Handle play button clicks
-          playButton.addEventListener('click', () => {
-            if (currentTarget && currentTarget.video) {
-              currentTarget.plane.setAttribute('visible', true);
-              playButton.style.display = 'none';
-              
-              currentTarget.video.muted = false;
-              currentTarget.video.play().catch(err => {
-                console.error('Playback error:', err);
-                setTimeout(() => {
-                  currentTarget.video.play().catch(() => {
-                    playButton.style.display = 'flex';
-                    currentTarget.plane.setAttribute('visible', false);
-                  });
-                }, 100);
+            function pauseAllVideosExcept(activeVideo) {
+              videos.forEach(video => {
+                if (video && video !== activeVideo) {
+                  video.pause();
+                  video.currentTime = 0;
+                }
               });
             }
+
+            const playButton = document.getElementById('playButton');
+
+            playButton.addEventListener('click', () => {
+              if (currentTarget && currentTarget.video) {
+                const startPlayback = async () => {
+                  currentTarget.plane.setAttribute('visible', true);
+                  playButton.style.display = 'none';
+                  try {
+                    await currentTarget.video.play();
+                  } catch (err) {
+                    setTimeout(async () => {
+                      try {
+                        await currentTarget.video.play();
+                      } catch (error) {
+                        playButton.style.display = 'flex';
+                        currentTarget.plane.setAttribute('visible', false);
+                      }
+                    }, 100);
+                  }
+                };
+                startPlayback();
+              }
+            });
+
+            targets.forEach(target => {
+              if (!target.video) return;
+
+              target.entity.addEventListener('targetFound', () => {
+                currentTarget = target;
+                target.video.currentTime = 0;
+                pauseAllVideosExcept(target.video);
+                target.plane.setAttribute('visible', false);
+                playButton.style.display = 'flex';
+              });
+
+              target.entity.addEventListener('targetLost', () => {
+                if (currentTarget === target) {
+                  target.video.pause();
+                  target.video.currentTime = 0;
+                  playButton.style.display = 'none';
+                  target.plane.setAttribute('visible', false);
+                  currentTarget = null;
+                }
+              });
+
+              target.video.addEventListener('play', () => {
+                pauseAllVideosExcept(target.video);
+              });
+
+              target.video.addEventListener('ended', () => {
+                if (target.video.loop) {
+                  target.video.currentTime = 0;
+                  target.video.play().catch(() => {});
+                }
+              });
+
+              target.video.muted = false;
+            });
+          })
+          .catch(function(err) {
+            loadingProgress.textContent = 'Camera permission denied';
           });
-        })
-        .catch(err => {
-          console.error('Camera access error:', err);
-          loadingProgress.textContent = 'Camera permission denied';
-        });
+      }, 2000);
     });
   </script>
 </body>
