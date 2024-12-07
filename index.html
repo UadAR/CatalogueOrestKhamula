@@ -135,16 +135,12 @@
           
           void main() {
             vec4 color = texture2D(videoTexture, vUv);
-            
             float dx = min(vUv.x, 1.0 - vUv.x);
             float dy = min(vUv.y, 1.0 - vUv.y);
             float edgeDistance = min(dx, dy);
-            
             float fadeWidth = 0.15;
             float opacity = smoothstep(0.0, fadeWidth, edgeDistance);
-            
             float globalOpacity = 0.9;
-            
             gl_FragColor = vec4(color.rgb, color.a * opacity * globalOpacity);
           }
         `;
@@ -168,88 +164,61 @@
     });
 
     document.addEventListener('DOMContentLoaded', function() {
-      const videos = [
-        document.getElementById('vid1'),
-        document.getElementById('vid2'),
-        document.getElementById('vid3'),
-        document.getElementById('vid4'),
-        document.getElementById('vid5'),
-        document.getElementById('vid6'),
-        document.getElementById('vid7')
-      ];
-      
+      const targets = Array.from({ length: 7 }, (_, i) => ({
+        video: document.getElementById(`vid${i + 1}`),
+        entity: document.querySelector(`a-entity[mindar-image-target="targetIndex: ${i}"]`),
+        plane: document.querySelector(`a-entity[mindar-image-target="targetIndex: ${i}"] a-plane`)
+      }));
+
       const playButton = document.getElementById('playButton');
       const loadingScreen = document.getElementById('loading-screen');
-      
-      let currentVideo = null;
-      let currentPlane = null;
-      let targetDetected = false;
+      let currentTarget = null;
 
-      const sceneEl = document.querySelector('a-scene');
-      
-      function setupVideo(video) {
-        video.addEventListener('loadedmetadata', () => {
-          console.log(video.id + ' metadata loaded');
-        });
-      }
-
-      videos.forEach(setupVideo);
-
-      sceneEl.addEventListener('arReady', () => {
+      document.querySelector('a-scene').addEventListener('arReady', () => {
         loadingScreen.style.display = 'none';
       });
 
+      function pauseAllVideosExcept(activeVideo) {
+        targets.forEach(t => {
+          if (t.video !== activeVideo) {
+            t.video.pause();
+            t.video.currentTime = 0;
+          }
+        });
+      }
+
       playButton.addEventListener('click', () => {
-        if (targetDetected && currentVideo) {
+        if (currentTarget) {
           playButton.style.display = 'none';
-          currentPlane.setAttribute('visible', true);
-          currentVideo.play().catch(error => {
-            console.error('Error playing video:', error);
+          currentTarget.plane.setAttribute('visible', true);
+          currentTarget.video.play().catch(() => {
             playButton.style.display = 'flex';
           });
         }
       });
 
-      function pauseOtherVideos(currentVid) {
-        videos.forEach(video => {
-          if (video !== currentVid) {
-            video.pause();
-            video.currentTime = 0;
-          }
-        });
-      }
-
-      // Handle all target indices
-      Array.from({length: 7}, (_, i) => i).forEach(targetIndex => {
-        const targetEntity = document.querySelector(`a-entity[mindar-image-target="targetIndex: ${targetIndex}"]`);
-        const plane = targetEntity.querySelector('a-plane');
-        
-        targetEntity.addEventListener('targetFound', () => {
-          console.log(`Target ${targetIndex} found`);
-          targetDetected = true;
-          currentVideo = videos[targetIndex];
-          currentPlane = plane;
-          pauseOtherVideos(currentVideo);
+      targets.forEach(target => {
+        target.entity.addEventListener('targetFound', () => {
+          currentTarget = target;
+          pauseAllVideosExcept(target.video);
           playButton.style.display = 'flex';
         });
 
-        targetEntity.addEventListener('targetLost', () => {
-          console.log(`Target ${targetIndex} lost`);
-          if (currentVideo === videos[targetIndex]) {
-            currentVideo.pause();
-            currentVideo.currentTime = 0;
+        target.entity.addEventListener('targetLost', () => {
+          if (currentTarget === target) {
+            target.video.pause();
+            target.video.currentTime = 0;
             playButton.style.display = 'none';
-            targetDetected = false;
-            plane.setAttribute('visible', false);
+            target.plane.setAttribute('visible', false);
+            currentTarget = null;
           }
         });
-      });
 
-      videos.forEach(video => {
-        video.addEventListener('play', () => {
-          pauseOtherVideos(video);
+        target.video.addEventListener('play', () => {
+          pauseAllVideosExcept(target.video);
         });
-        video.muted = false;
+
+        target.video.muted = false;
       });
     });
   </script>
