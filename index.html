@@ -92,7 +92,7 @@
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 3">
-        <a-plane width="1" height="1.5" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid4" visible="false"></a-plane>
+        <a-plane width="1.2" height="1.5" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid4" visible="false"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 4">
@@ -164,8 +164,11 @@
     });
 
     document.addEventListener('DOMContentLoaded', function() {
+      const videos = Array.from({ length: 7 }, (_, i) => document.getElementById(`vid${i + 1}`));
+      videos.forEach(video => video.load());
+
       const targets = Array.from({ length: 7 }, (_, i) => ({
-        video: document.getElementById(`vid${i + 1}`),
+        video: videos[i],
         entity: document.querySelector(`a-entity[mindar-image-target="targetIndex: ${i}"]`),
         plane: document.querySelector(`a-entity[mindar-image-target="targetIndex: ${i}"] a-plane`)
       }));
@@ -179,27 +182,36 @@
       });
 
       function pauseAllVideosExcept(activeVideo) {
-        targets.forEach(t => {
-          if (t.video !== activeVideo) {
-            t.video.pause();
-            t.video.currentTime = 0;
+        videos.forEach(video => {
+          if (video !== activeVideo) {
+            video.pause();
+            video.currentTime = 0;
           }
         });
+      }
+
+      async function playVideo(video, plane) {
+        try {
+          plane.setAttribute('visible', true);
+          await video.play();
+          playButton.style.display = 'none';
+        } catch (error) {
+          playButton.style.display = 'flex';
+        }
       }
 
       playButton.addEventListener('click', () => {
         if (currentTarget) {
           playButton.style.display = 'none';
-          currentTarget.plane.setAttribute('visible', true);
-          setTimeout(() => {
-            currentTarget.video.play().catch(() => {
-              playButton.style.display = 'flex';
-            });
-          }, 50);
+          playVideo(currentTarget.video, currentTarget.plane);
         }
       });
 
       targets.forEach(target => {
+        target.video.addEventListener('loadeddata', () => {
+          target.video.currentTime = 0;
+        });
+
         target.entity.addEventListener('targetFound', () => {
           currentTarget = target;
           target.video.currentTime = 0;
