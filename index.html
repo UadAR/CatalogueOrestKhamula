@@ -165,8 +165,7 @@
 
     document.addEventListener('DOMContentLoaded', function() {
       const videos = Array.from({ length: 7 }, (_, i) => document.getElementById(`vid${i + 1}`));
-      videos.forEach(video => video.load());
-
+      
       const targets = Array.from({ length: 7 }, (_, i) => ({
         video: videos[i],
         entity: document.querySelector(`a-entity[mindar-image-target="targetIndex: ${i}"]`),
@@ -176,6 +175,12 @@
       const playButton = document.getElementById('playButton');
       const loadingScreen = document.getElementById('loading-screen');
       let currentTarget = null;
+
+      // Preload videos
+      videos.forEach(video => {
+        video.load();
+        video.currentTime = 0.001;
+      });
 
       document.querySelector('a-scene').addEventListener('arReady', () => {
         loadingScreen.style.display = 'none';
@@ -190,32 +195,35 @@
         });
       }
 
-      async function playVideo(video, plane) {
-        try {
-          plane.setAttribute('visible', true);
-          await video.play();
-          playButton.style.display = 'none';
-        } catch (error) {
-          playButton.style.display = 'flex';
-        }
-      }
-
       playButton.addEventListener('click', () => {
         if (currentTarget) {
-          playButton.style.display = 'none';
-          playVideo(currentTarget.video, currentTarget.plane);
+          const startPlayback = async () => {
+            currentTarget.plane.setAttribute('visible', true);
+            playButton.style.display = 'none';
+            try {
+              await currentTarget.video.play();
+            } catch (err) {
+              // If first attempt fails, try again with a slight delay
+              setTimeout(async () => {
+                try {
+                  await currentTarget.video.play();
+                } catch (error) {
+                  playButton.style.display = 'flex';
+                  currentTarget.plane.setAttribute('visible', false);
+                }
+              }, 100);
+            }
+          };
+          startPlayback();
         }
       });
 
       targets.forEach(target => {
-        target.video.addEventListener('loadeddata', () => {
-          target.video.currentTime = 0;
-        });
-
         target.entity.addEventListener('targetFound', () => {
           currentTarget = target;
           target.video.currentTime = 0;
           pauseAllVideosExcept(target.video);
+          target.plane.setAttribute('visible', false);
           playButton.style.display = 'flex';
         });
 
@@ -231,6 +239,13 @@
 
         target.video.addEventListener('play', () => {
           pauseAllVideosExcept(target.video);
+        });
+
+        target.video.addEventListener('ended', () => {
+          if (target.video.loop) {
+            target.video.currentTime = 0;
+            target.video.play().catch(() => {});
+          }
         });
 
         target.video.muted = false;
