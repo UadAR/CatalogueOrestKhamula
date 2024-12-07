@@ -116,7 +116,10 @@
         <video id="vid4" src="assets/asset4.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
         <video id="vid5" src="assets/asset5.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
         <video id="vid6" src="assets/asset6.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="vid7" src="assets/asset7.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
         <video id="vid8" src="assets/asset8.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="vid9" src="assets/asset9.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="vid10" src="assets/asset10.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
         <video id="vid12" src="assets/asset12.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
       </a-assets>
 
@@ -145,6 +148,7 @@
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 6">
+        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid7" visible="false"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 7">
@@ -152,9 +156,11 @@
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 8">
+        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid9" visible="false"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 9">
+        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid10" visible="false"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 10">
@@ -168,7 +174,6 @@
   </div>
   <div id="playButton" class="play-button"></div>
 
-<!-- JavaScript continues in part 2 -->
   <script>
     AFRAME.registerComponent('video-material', {
       schema: {
@@ -241,10 +246,10 @@
         document.getElementById('vid4'),
         document.getElementById('vid5'),
         document.getElementById('vid6'),
-        null,
+        document.getElementById('vid7'),
         document.getElementById('vid8'),
-        null,
-        null,
+        document.getElementById('vid9'),
+        document.getElementById('vid10'),
         null,
         document.getElementById('vid12')
       ];
