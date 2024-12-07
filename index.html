@@ -69,45 +69,36 @@
       device-orientation-permission-ui="enabled: false"
     >
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-      <a-assets>
-        <video id="vid1" src="assets/asset.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
-        <video id="vid2" src="assets/asset2.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
-        <video id="vid3" src="assets/asset3.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
-        <video id="vid4" src="assets/asset4.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
-        <video id="vid5" src="assets/asset5.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
-        <video id="vid6" src="assets/asset6.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
-        <video id="vid8" src="assets/asset8.mp4" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
-      </a-assets>
 
       <a-entity mindar-image-target="targetIndex: 0">
-        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid1" visible="false"></a-plane>
+        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset.mp4" visible="false"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 1">
-        <a-plane width="1.2" height="1.8" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid2" visible="false"></a-plane>
+        <a-plane width="1.2" height="1.8" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset2.mp4" visible="false"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 2">
-        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid3" visible="false"></a-plane>
+        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset3.mp4" visible="false"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 3">
-        <a-plane width="1.2" height="1.5" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid4" visible="false"></a-plane>
+        <a-plane width="1.2" height="1.5" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset4.mp4" visible="false"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 4">
-        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid5" visible="false"></a-plane>
+        <a-plane width="1.5" height="1" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset5.mp4" visible="false"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 5">
-        <a-plane width="1.8" height="0.8" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid6" visible="false"></a-plane>
+        <a-plane width="1.8" height="0.8" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset6.mp4" visible="false"></a-plane>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 6">
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 7">
-        <a-plane width="1" height="1.5" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="video: #vid8" visible="false"></a-plane>
+        <a-plane width="1" height="1.5" position="0 0 0" rotation="0 0 0" material="transparent: true" video-material="videoSrc: assets/asset8.mp4" visible="false"></a-plane>
       </a-entity>
 
     </a-scene>
@@ -117,13 +108,25 @@
   <script>
     AFRAME.registerComponent('video-material', {
       schema: {
-        video: { type: 'selector' }
+        videoSrc: { type: 'string' }
       },
 
       init: function () {
-        const mesh = this.el.getObject3D('mesh');
-        const video = this.data.video;
+        this.video = null;
+        this.mesh = this.el.getObject3D('mesh');
+      },
 
+      loadVideo: function() {
+        if (this.video) return;
+
+        this.video = document.createElement('video');
+        this.video.src = this.data.videoSrc;
+        this.video.crossOrigin = 'anonymous';
+        this.video.loop = true;
+        this.video.playsinline = true;
+        this.video.webkit-playsinline = true;
+        this.video.muted = false;
+        
         const vertexShader = `
           varying vec2 vUv;
           void main() {
@@ -148,7 +151,7 @@
           }
         `;
 
-        const videoTexture = new THREE.VideoTexture(video);
+        const videoTexture = new THREE.VideoTexture(this.video);
         videoTexture.minFilter = THREE.LinearFilter;
         videoTexture.magFilter = THREE.LinearFilter;
         videoTexture.format = THREE.RGBAFormat;
@@ -162,65 +165,56 @@
           transparent: true
         });
 
-        mesh.material = material;
+        this.mesh.material = material;
+      },
+
+      unloadVideo: function() {
+        if (this.video) {
+          this.video.pause();
+          this.video.removeAttribute('src');
+          this.video.load();
+          this.video = null;
+        }
       }
     });
 
     document.addEventListener('DOMContentLoaded', function() {
-      const videos = [
-        document.getElementById('vid1'),
-        document.getElementById('vid2'),
-        document.getElementById('vid3'),
-        document.getElementById('vid4'),
-        document.getElementById('vid5'),
-        document.getElementById('vid6'),
-        null,  // Empty slot for index 6
-        document.getElementById('vid8')
-      ];
-      
-      const targets = videos.map((video, i) => ({
-        video: video,
+      const targets = Array.from({ length: 8 }, (_, i) => ({
         entity: document.querySelector(`a-entity[mindar-image-target="targetIndex: ${i}"]`),
-        plane: document.querySelector(`a-entity[mindar-image-target="targetIndex: ${i}"] a-plane`)
+        plane: document.querySelector(`a-entity[mindar-image-target="targetIndex: ${i}"] a-plane`),
+        videoMaterial: i !== 6 ? document.querySelector(`a-entity[mindar-image-target="targetIndex: ${i}"] a-plane`).components['video-material'] : null
       }));
 
       const playButton = document.getElementById('playButton');
       const loadingScreen = document.getElementById('loading-screen');
       let currentTarget = null;
 
-      // Preload videos
-      videos.forEach(video => {
-        if (video) {
-          video.load();
-          video.currentTime = 0.001;
-        }
-      });
-
       document.querySelector('a-scene').addEventListener('arReady', () => {
         loadingScreen.style.display = 'none';
       });
 
-      function pauseAllVideosExcept(activeVideo) {
-        videos.forEach(video => {
-          if (video && video !== activeVideo) {
-            video.pause();
-            video.currentTime = 0;
+      function pauseAllVideosExcept(activeVideoMaterial) {
+        targets.forEach(target => {
+          if (target.videoMaterial && target.videoMaterial !== activeVideoMaterial && target.videoMaterial.video) {
+            target.videoMaterial.video.pause();
+            if (!activeVideoMaterial || target.videoMaterial !== activeVideoMaterial) {
+              target.videoMaterial.unloadVideo();
+            }
           }
         });
       }
 
       playButton.addEventListener('click', () => {
-        if (currentTarget && currentTarget.video) {
+        if (currentTarget && currentTarget.videoMaterial && currentTarget.videoMaterial.video) {
           const startPlayback = async () => {
             currentTarget.plane.setAttribute('visible', true);
             playButton.style.display = 'none';
             try {
-              await currentTarget.video.play();
+              await currentTarget.videoMaterial.video.play();
             } catch (err) {
-              // If first attempt fails, try again with a slight delay
               setTimeout(async () => {
                 try {
-                  await currentTarget.video.play();
+                  await currentTarget.videoMaterial.video.play();
                 } catch (error) {
                   playButton.style.display = 'flex';
                   currentTarget.plane.setAttribute('visible', false);
@@ -233,38 +227,30 @@
       });
 
       targets.forEach(target => {
-        if (!target.video) return; // Skip for empty target (index 6)
+        if (!target.videoMaterial) return; // Skip for empty target (index 6)
         
         target.entity.addEventListener('targetFound', () => {
           currentTarget = target;
-          target.video.currentTime = 0;
-          pauseAllVideosExcept(target.video);
+          target.videoMaterial.loadVideo();
+          if (target.videoMaterial.video) {
+            target.videoMaterial.video.currentTime = 0;
+          }
+          pauseAllVideosExcept(target.videoMaterial);
           target.plane.setAttribute('visible', false);
           playButton.style.display = 'flex';
         });
 
         target.entity.addEventListener('targetLost', () => {
           if (currentTarget === target) {
-            target.video.pause();
-            target.video.currentTime = 0;
+            if (target.videoMaterial.video) {
+              target.videoMaterial.video.pause();
+            }
             playButton.style.display = 'none';
             target.plane.setAttribute('visible', false);
+            target.videoMaterial.unloadVideo();
             currentTarget = null;
           }
         });
-
-        target.video.addEventListener('play', () => {
-          pauseAllVideosExcept(target.video);
-        });
-
-        target.video.addEventListener('ended', () => {
-          if (target.video.loop) {
-            target.video.currentTime = 0;
-            target.video.play().catch(() => {});
-          }
-        });
-
-        target.video.muted = false;
       });
     });
   </script>
